@@ -1,0 +1,28 @@
+services:
+  adapter:
+    build: .
+    environment:
+      ADAPTER_CONFIG: /etc/paperless-ai/config.json
+      ADAPTER_BIND: ${ADAPTER_BIND:-0.0.0.0}
+      ADAPTER_PORT: ${ADAPTER_PORT:-11434}
+      CREDENTIALS_DIRECTORY: /run/secrets
+    volumes:
+      - ./config/config.json:/etc/paperless-ai/config.json:ro
+    secrets:
+      - source: openai_key
+        target: openai-key
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+  ollama-lb:
+    image: haproxy:3.2-alpine
+    volumes:
+      - ./config/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    ports:
+      - "127.0.0.1:11434:11434"
+    depends_on: [adapter]
+    restart: unless-stopped
+secrets:
+  openai_key:
+    file: ./secrets/openai-key

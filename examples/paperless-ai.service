@@ -1,0 +1,22 @@
+[Unit]
+Description=Ordered local AI fallback adapter
+After=network-online.target
+Wants=network-online.target
+[Service]
+DynamicUser=yes
+Environment=ADAPTER_CONFIG=/etc/paperless-ai/config.json
+Environment=ADAPTER_BIND=127.0.0.1
+ExecStart=/usr/bin/python3 /usr/local/lib/paperless-ai/adapter.py
+LoadCredential=openai-key:/etc/paperless-ai/openai-key
+BindReadOnlyPaths=/etc/paperless-ai/config.json:/etc/paperless-ai/config.json
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+RestrictAddressFamilies=AF_INET AF_INET6
+StandardOutput=null
+StandardError=null
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,5 @@
+.git
+secrets
+.env
+config/config.json
+__pycache__

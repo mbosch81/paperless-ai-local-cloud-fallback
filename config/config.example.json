@@ -1,0 +1,18 @@
+{
+  "backends": [
+    {
+      "name": "rtx4090",
+      "host": "ollama-primary.example.invalid",
+      "port": 11434
+    },
+    {
+      "name": "rtx4090m",
+      "host": "ollama-secondary.example.invalid",
+      "port": 11434
+    }
+  ],
+  "cloud_model": "gpt-4.1-mini",
+  "advertised_model": "qwen3:14b",
+  "disabled": [],
+  "cloud_only_if_unreachable": true
+}
