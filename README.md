@@ -1,6 +1,6 @@
 # paperless-ai-local-cloud-fallback
 
-An infrastructure portfolio project for document classification with **ordered local inference and a guarded cloud fallback**: RTX 4090 → RTX 4090m → OpenAI API.
+An infrastructure portfolio project for document classification with **ordered local inference and a guarded cloud fallback**: local GPU 1 → local GPU 2 → OpenAI API.
 
 Paperless-ngx sends Ollama-compatible requests through HAProxy to a small Python adapter. The adapter tries the configured local providers sequentially and translates supported requests to OpenAI Chat Completions only when the cloud policy permits it. This preserves a local-first workflow while providing a recovery path when both local APIs fail reachability checks.
 
@@ -12,8 +12,8 @@ This is an **integration and infrastructure project**: provider routing, HTTP pr
 flowchart TD
     P[Paperless-ngx AI workflow] --> H[HAProxy: Ollama API endpoint]
     H --> A[Python ordered adapter]
-    A --> R[1: Ollama / RTX 4090]
-    R -->|Request fails or backend skipped| M[2: Ollama / RTX 4090m]
+    A --> R[1: Ollama / local GPU 1]
+    R -->|Request fails or backend skipped| M[2: Ollama / local GPU 2]
     M -->|No local result| G{Fresh local API reachability check}
     G -->|At least one API responds successfully| E[503: cloud not permitted]
     G -->|Both checks fail| O[3: OpenAI Chat Completions]

@@ -9,7 +9,7 @@ SSH authentication succeeded after network sandbox escalation. Running-container
 - Paperless-ngx reported version 3.3.1; HAProxy used the 3.2 Alpine image.
 - Paperless's Ollama endpoint resolved to HAProxy; HAProxy had a single ordered-adapter target.
 - The adapter ran as a Python systemd service with DynamicUser and a LoadCredential file.
-- Configured priority: `rtx4090`, `rtx4090m`, then `openai`; no disabled providers.
+- Observed provider priority is represented here as `local GPU 1`, `local GPU 2`, then `openai`; no disabled providers. Production provider labels have been generalized in this reference.
 - Cloud model: `gpt-4.1-mini`; local client model: `qwen3:14b`; cloud reachability gate enabled.
 - One status snapshot reported primary unhealthy, secondary healthy, and 28 successful secondary inferences since process startup. Counters are application telemetry, not independent proof of classification correctness.
 - Current source SHA-256: `b17bbe3bb013e2f09fbf1c35328fd7ae7d1735747f6e4190a17c4dc3244e8522`.
@@ -18,7 +18,7 @@ Provider names were observed configuration labels. Physical GPU identity was not
 
 ## Reference changes relative to inspected source
 
-The provider selection and cloud gate were preserved. Internal bind address and paths were removed. Environment variables now select configuration path/bind/port. Local backend ports and the synthetic advertised model are configurable (defaults preserve observed behavior). The public version string was generalized. The optional Docker adapter deployment is new; production uses systemd. Example domains are non-resolving placeholders; there are no production endpoints or credentials.
+The provider selection and cloud gate were preserved. Provider labels were generalized to `local GPU 1` and `local GPU 2`. Internal bind address and paths were removed. Environment variables now select configuration path/bind/port. Local backend ports and the synthetic advertised model are configurable (defaults preserve observed behavior). The public version string was generalized. The optional Docker adapter deployment is new; production uses systemd. Example domains are non-resolving placeholders; there are no production endpoints or credentials.
 
 No Paperless workflow code, taxonomy, personal rules, templates, logs, real document data, raw Compose file, or raw environment dump is included. There is no claim that the existing Python adapter was originally authored by the portfolio owner; repository preparation and test development were AI-assisted. Original ownership/licensing history remains unverified.
 

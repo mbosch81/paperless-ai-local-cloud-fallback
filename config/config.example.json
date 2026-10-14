@@ -1,12 +1,12 @@
 {
   "backends": [
     {
-      "name": "rtx4090",
+      "name": "local GPU 1",
       "host": "ollama-primary.example.invalid",
       "port": 11434
     },
     {
-      "name": "rtx4090m",
+      "name": "local GPU 2",
       "host": "ollama-secondary.example.invalid",
       "port": 11434
     }

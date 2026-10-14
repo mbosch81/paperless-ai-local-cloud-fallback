@@ -28,7 +28,7 @@ class Tests(unittest.TestCase):
             s=ThreadingHTTPServer(('127.0.0.1',0),Backend); s.state={'calls':[]}
             threading.Thread(target=s.serve_forever,daemon=True).start(); self.servers.append(s); self.states.append(s.state)
         self.states[2]['result']={'choices':[{'message':{'content':'synthetic cloud'},'finish_reason':'stop'}],'usage':{'prompt_tokens':2}}
-        self.cfg={'backends':[{'name':'rtx4090','host':'primary.test'},{'name':'rtx4090m','host':'secondary.test'}],'cloud_model':'test-cloud','cloud_only_if_unreachable':True}
+        self.cfg={'backends':[{'name':'local GPU 1','host':'primary.test'},{'name':'local GPU 2','host':'secondary.test'}],'cloud_model':'test-cloud','cloud_only_if_unreachable':True}
         Path(self.tmp.name,'openai-key').write_text('synthetic-test-credential')
         self.stack.enter_context(patch.object(a,'config',lambda:self.cfg)); self.stack.enter_context(patch.dict(os.environ,{'CREDENTIALS_DIRECTORY':self.tmp.name}))
         original=a.request
@@ -49,19 +49,19 @@ class Tests(unittest.TestCase):
     def fail(self):
         for s in self.states[:2]: s.update(code=503,tags=503)
     def test_primary(self):
-        status,h,_=self.call(); self.assertEqual(status,200); self.assertEqual(h['X-Ollama-Backend'],'rtx4090'); self.assertFalse(self.states[1]['calls']); self.assertFalse(self.states[2]['calls']); self.assertFalse(self.states[0]['calls'][0][1]['stream'])
+        status,h,_=self.call(); self.assertEqual(status,200); self.assertEqual(h['X-Ollama-Backend'],'local GPU 1'); self.assertFalse(self.states[1]['calls']); self.assertFalse(self.states[2]['calls']); self.assertFalse(self.states[0]['calls'][0][1]['stream'])
     def test_secondary_on_http_error(self):
-        self.states[0]['code']=500; self.assertEqual(self.call()[1]['X-Ollama-Backend'],'rtx4090m')
+        self.states[0]['code']=500; self.assertEqual(self.call()[1]['X-Ollama-Backend'],'local GPU 2')
     def test_secondary_on_timeout(self):
-        self.states[0]['delay']=.15; self.assertEqual(self.call()[1]['X-Ollama-Backend'],'rtx4090m'); self.assertEqual(self.calls[0][2],180)
+        self.states[0]['delay']=.15; self.assertEqual(self.call()[1]['X-Ollama-Backend'],'local GPU 2'); self.assertEqual(self.calls[0][2],180)
     def test_secondary_on_invalid_json(self):
-        self.states[0]['result']=b'bad'; self.assertEqual(self.call()[1]['X-Ollama-Backend'],'rtx4090m')
+        self.states[0]['result']=b'bad'; self.assertEqual(self.call()[1]['X-Ollama-Backend'],'local GPU 2')
     def test_secondary_on_incomplete(self):
-        self.states[0]['result']={'done':False}; self.assertEqual(self.call()[1]['X-Ollama-Backend'],'rtx4090m')
+        self.states[0]['result']={'done':False}; self.assertEqual(self.call()[1]['X-Ollama-Backend'],'local GPU 2')
     def test_secondary_on_error_payload(self):
-        self.states[0]['result']={'done':True,'error':'synthetic'}; self.assertEqual(self.call()[1]['X-Ollama-Backend'],'rtx4090m')
+        self.states[0]['result']={'done':True,'error':'synthetic'}; self.assertEqual(self.call()[1]['X-Ollama-Backend'],'local GPU 2')
     def test_secondary_on_refused_connection(self):
-        self.servers[0].shutdown(); self.servers[0].server_close(); self.assertEqual(self.call()[1]['X-Ollama-Backend'],'rtx4090m')
+        self.servers[0].shutdown(); self.servers[0].server_close(); self.assertEqual(self.call()[1]['X-Ollama-Backend'],'local GPU 2')
     def test_cloud_order_and_mapping(self):
         self.fail(); status,h,b=self.call({'model':'test-local','system':'classify','prompt':'synthetic','format':'json','options':{'temperature':.1,'num_predict':12},'stream':False})
         self.assertEqual(status,200); self.assertEqual(h['X-Ollama-Backend'],'openai'); self.assertEqual(b['model'],'test-local')
@@ -89,11 +89,11 @@ class Tests(unittest.TestCase):
         status,_,b=self.call({'model':'test','messages':[{'role':'user','content':'synthetic'}],'format':schema,'tools':tools},'/api/chat')
         self.assertEqual(status,200); self.assertEqual(b['message']['tool_calls'][0]['function']['arguments'],{}); sent=self.states[2]['calls'][0][1]; self.assertEqual(sent['tools'],tools); self.assertTrue(sent['response_format']['json_schema']['strict'])
     def test_health_is_liveness(self):
-        a.HEALTH.update(rtx4090=False,rtx4090m=False); self.assertEqual(self.call(path='/health',method='GET')[0],200)
+        a.HEALTH.update({'local GPU 1': False, 'local GPU 2': False}); self.assertEqual(self.call(path='/health',method='GET')[0],200)
     def test_unhealthy_skipped(self):
-        a.HEALTH['rtx4090']=False; self.assertEqual(self.call()[1]['X-Ollama-Backend'],'rtx4090m'); self.assertFalse(self.states[0]['calls'])
+        a.HEALTH['local GPU 1']=False; self.assertEqual(self.call()[1]['X-Ollama-Backend'],'local GPU 2'); self.assertFalse(self.states[0]['calls'])
     def test_disabled_reachable_still_blocks_cloud(self):
-        self.cfg['disabled']=['rtx4090','rtx4090m']; self.assertEqual(self.call()[0],503); self.assertFalse(self.states[2]['calls'])
+        self.cfg['disabled']=['local GPU 1','local GPU 2']; self.assertEqual(self.call()[0],503); self.assertFalse(self.states[2]['calls'])
     def test_tags_synthetic_fallback(self):
         self.fail(); status,_,b=self.call(path='/api/tags',method='GET'); self.assertEqual(status,200); self.assertEqual(b['models'][0]['digest'],'cloud-fallback'); self.assertFalse(self.states[2]['calls'])
     def test_stream_single_chunk(self):
